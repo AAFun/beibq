@@ -20,7 +20,8 @@ python版本要求: python3.6+
   + 直接截图上传![](doc/image/shoudongjietu.gif)
   + 自定义图片大小![](doc/image/gaibianshangchuan.gif)
   + 拖拽上传![](doc/image/drop.gif)
-  
+
+3. 渲染代码 采用highlight.js渲染代码，使其具有高亮。
 
 
 
