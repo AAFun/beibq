@@ -1,4 +1,4 @@
-(function(factory){
+(function(factory){ // 传入了一个参数，而这个参数就是window.bookeditor，使用的是工厂模式编写代码，假设传入的是codemirror
     window.bookeditor = factory();
 }(function(){
 
@@ -63,7 +63,7 @@ global = {
 
 global.os = validateOS();
 
-function Catalog(bookeditor, editor, options){
+function Catalog(bookeditor, editor, options){ // 目录
     var _this = this;
     var settings = _this.settings = options;
     _this.bookeditor = bookeditor;
@@ -191,7 +191,7 @@ function newNode(value){
     return node;
 }
 
-Catalog.json2catalogs = function(catalogs){
+Catalog.json2catalogs = function(catalogs){ 
     var nodes = [], node;
     var dropdown_id, catalog;
     for(var i in catalogs){
@@ -1063,7 +1063,7 @@ ToolBar.prototype = {
 };
 
 
-function Editor(bookeditor, options){
+function Editor(bookeditor, options){ //就是codemirror
     var _this = this;
     _this.bookeditor = bookeditor;
     var settings = _this.settings = options;
@@ -1084,7 +1084,7 @@ function Editor(bookeditor, options){
         '</div>'
     ].join("\n");
     bookeditor.main_sel.append(editor_html);
-    _this.editor_sel = $("#book-editor");
+    _this.editor_sel = $("#book-editor"); //定位了编辑器的主要四部分2+2
     _this.codemirror_sel = $("#book-codemirror");
     _this.preview_sel = $("#book-preview");
     _this.html_sel = $("#book-html");
@@ -1102,9 +1102,11 @@ function Editor(bookeditor, options){
         if(_this.editor){
             _this.editor.focus();
         }
-    });
-
+    });  
     _this.initCodeMirror();
+    _this.insert_inline_image();
+    // _this.dropImg();
+
     return _this;
 }
 
@@ -1253,11 +1255,13 @@ Editor.prototype = {
     addExtraHtml: function(html){
         root = '<div class="root-html">'+html+'</div>';
         root = $(root);
-        // 高亮预览HTML的pre代码部分
-        root.find("pre").addClass("prettyprint linenums");
-        // 添加表格
-        root.find("table").addClass("table table-bordered table-striped");
-        prettyPrint(null, root[0]);
+        // // 高亮预览HTML的pre代码部分
+        // root.find("pre").addClass("prettyprint linenums");
+        // // 添加表格
+        // root.find("table").addClass("table table-bordered table-striped");
+        // console.log(root[0])
+        // hljs.highlightAuto(code).value
+        // prettyPrint(null, root[0]);
 
         // 解析TeX(KaTeX)科学公式
         root.find("."+global.katexClass).each(function(){
@@ -1282,7 +1286,7 @@ Editor.prototype = {
             breaks: true,
             smartLists: true,
             smartypants: true,
-            sanitize: true,     // 是否忽略html标签,true=>不忽略 false=>忽略
+            sanitize: false,     // 是否忽略html标签,true=>不忽略 false=>忽略
         };
         var html = marked(markdown, options);
         return _this.addExtraHtml(html);
@@ -1413,7 +1417,110 @@ Editor.prototype = {
             }, 400);
         });
     },
+    insert_inline_image:function(){
 
+        var _this = this;
+        var editor= _this.editor;
+        var editor_sel = _this.editor_sel;
+
+        function encodeURIandParens(uri){return encodeURI(uri).replace('(','%28').replace(')','%29')}
+        function parse_b64_data_uri(uri) {
+            var regex = /^data:(.+?\/.+?);base64,/;
+            var matches = uri.match(regex);
+            var mime = matches[1];
+            // matches[0] contains the whole data-uri prefix
+            var b64_data = uri.slice(matches[0].length);
+            return [mime, b64_data];
+        };
+        function updateImg(blob){
+            /**
+             * Insert markup for an inline image at the current cursor position.
+             * This works as follow :
+             * - We insert the base64-encoded blob data into the cell attachments
+             *   dictionary, keyed by the filename.
+             * - We insert an img tag with a 'attachment:key' src that refers to
+             *   the attachments entry.
+             *
+             * Parameters:
+             *  file: Blob
+             *      The JS Blob object (e.g. from the DataTransferItem)
+             */
+
+            var that = this;
+            var reader = new FileReader();
+            // We can get either a named file (drag'n'drop) or a blob (copy/paste)
+            // We generate names for blobs
+
+            reader.onloadend = function() {
+                var d = parse_b64_data_uri(reader.result);
+
+                var api_url = 'https://sm.ms/api/upload';
+                var FileForm = new FormData();
+                FileForm.append("smfile", blob);
+                FileForm.append("format", "json");
+                $.ajax({
+                    type: 'POST',
+                    url: api_url,
+                    data: FileForm,
+                    processData: false,
+                    //  告诉jquery不要处理发送的数据
+                    contentType: false,
+                    dataType: 'json',
+                    success: function(data) {
+                        console.log();
+                        var width = editor.getSelection();
+                        var image_url = data.data.url;
+                        var storename =  data.data.storename
+                        if (width == "") {
+                            var img_md = '![' + storename+ '](' + image_url + ')';
+                        } else {
+                            var img_md = '<img src="' + image_url + '" width="' + width + 'px" />'
+                        }
+                        editor.replaceSelection(img_md);
+                    },
+                });
+    //
+            }
+
+            reader.readAsDataURL(blob);
+        };
+        editor_sel.bind("paste",function(evt){
+            var data = evt.originalEvent.clipboardData;
+            var items = data.items;
+            var attachment_regex = /^image\/.*$/;
+            if (data.items !== undefined) {
+                for (var i = 0; i < items.length; ++i) {
+                    var item = items[i];
+                    if (item.kind == 'file' && attachment_regex.test(item.type)) {
+                        // TODO(julienr): This does not stop code_mirror from pasting
+                        // the filename.
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        updateImg(item.getAsFile());
+                    }
+                }
+            }
+        });
+        
+        editor_sel.bind("drop",function(evt){
+            var data = evt.originalEvent.dataTransfer;
+            var items = data.items;
+            var attachment_regex = /^image\/.*$/;
+            if (data.items !== undefined) {
+                for (var i = 0; i < items.length; ++i) {
+                    var item = items[i];
+                    if (item.kind == 'file' && attachment_regex.test(item.type)) {
+                        // TODO(julienr): This does not stop code_mirror from pasting
+                        // the filename.
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        updateImg(item.getAsFile());
+                    }
+                }
+            }
+        });
+    },
+  
 };
 
 bookeditor.defaults = {
@@ -1424,7 +1531,7 @@ bookeditor.defaults = {
     full: false,
     width: "100%",
     height: "480px",
-    editorWidth: "60%",
+    editorWidth: "50%",
 
     markdown: "",
 
@@ -1596,13 +1703,27 @@ bookeditor.defaults = {
 };
 
 
-function bookeditor(options){
+function bookeditor(options){ 
+    
+    // 这一行运行的时候 已经得到了
+    // 1. 目录
+    // 2. event
+    // 3. fileMenus
+    // 4. menuHandlers
+    // 5.  toolbarHandlers
+    // 6. markdown
+    // 7. 。。。。
+    // 即得到了bookeditor.defaults
+
+    // console.log(options); 
+
     if (!(this instanceof bookeditor)) return new bookeditor(options);
 
     var _this = this;
     options = options || {};
 
     var settings = _this.settings = $.extend(true, bookeditor.defaults, options);
+    // 扩展配置或者就 bookeditor.defaults
     settings.toolbarBtns = (typeof options.toolbarBtns ==="undefined")? bookeditor.defaults.toolbarBtns : options.toolbarBtns;
     settings.toolbarRightBtns = (typeof options.toolbarRightBtns === "undefined")? bookeditor.defaults.toolbarRightBtns : options.toolbarRightBtns;
 
@@ -1875,8 +1996,7 @@ bookeditor.prototype = {
         }
     },
 };
-
-return bookeditor;
+return bookeditor; //从这里开始执行
 
 }));
 

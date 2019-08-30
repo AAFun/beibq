@@ -841,3 +841,17 @@ html.catalog-menu-open .book-container {
   text-align: center; }
   .info-panel .center-group .center-btn {
     padding: 3px 30px; }
+
+.MathJax_Display{
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+.MathJax{
+  outline:0;
+}
+
+/*.CodeMirror {
+  border: 1px solid #eee;
+  height: auto;
+}
+*/

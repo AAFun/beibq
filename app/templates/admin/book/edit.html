@@ -12,6 +12,9 @@
 <link rel="stylesheet" href="{{url_for("static", filename="asserts/jquery-file-upload/css/jquery.fileupload.css")}}">
 <link rel="stylesheet" href="{{url_for("static", filename="asserts/bookeditor/bookeditor.css")}}">
 <link rel="stylesheet" href="{{url_for("static", filename="css/admin/edit.css")}}">
+
+<link rel="stylesheet" href="{{url_for("static", filename="asserts/bookeditor/plugins/customize/customize.css")}}">
+
 {%else%}
 <link rel="stylesheet" href="{{url_for("static", filename="dist/css/edit.min.css")}}">
 {%endif%}
@@ -128,8 +131,11 @@
 <script src="{{url_for("static", filename="asserts/mousetrap/mousetrap.js")}}"></script>
 <script src="{{url_for("static", filename="asserts/bookeditor/bookeditor.js")}}"></script>
 <script src="{{url_for("static", filename="js/admin/edit.js")}}"></script>
+<script src="{{url_for("static", filename="asserts/bookeditor/plugins/customize/customize.js")}}"></script>
+
 {%else%}
 <script src="{{url_for("static", filename="dist/js/edit.min.js")}}"></script>
+
 {%endif%}
 
 {{super()}}

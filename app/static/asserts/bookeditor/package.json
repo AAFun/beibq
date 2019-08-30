@@ -20,5 +20,8 @@
     "gulp-uglify": "^3.0.0",
     "node-sass": "^4.7.2",
     "precss": "^2.0.0"
+  },
+  "dependencies": {
+    "highlight.js": "^9.15.10"
   }
 }
